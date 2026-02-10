@@ -1,0 +1,19 @@
+tap "steipete/tap"
+# GitHub command-line tool
+brew "gh"
+# Distributed revision control system
+brew "git"
+# Open-source build automation tool based on the Groovy and Kotlin DSL
+brew "gradle"
+# Extremely fast Python package installer and resolver, written in Rust
+brew "uv"
+# Fast CLI for Apple Reminders
+brew "steipete/tap/remindctl"
+# Link → clean text → summary
+brew "steipete/tap/summarize"
+# Command-line tools for building and debugging Android apps
+cask "android-commandlinetools"
+# Get up and running with large language models locally
+cask "ollama-app"
+# JDK from the Eclipse Foundation (Adoptium)
+cask "temurin@17"
