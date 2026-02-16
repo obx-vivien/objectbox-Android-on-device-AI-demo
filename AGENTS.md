@@ -89,3 +89,4 @@ Must ask before:
 - changing repo layout or combining Android/iOS into a single codebase
 - moving away from ObjectBox for storage or vector search
 - adding cloud inference or network dependencies
+

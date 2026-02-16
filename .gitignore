@@ -18,3 +18,8 @@ local.properties
 .codex/
 .claude/
 .claude.json*
+
+# ObjectBox (Android build artifacts)
+android-kotlin/app/objectbox/
+android-kotlin/app/objectbox-models/
+android-kotlin/app/libobjectbox-jni-*.dylib
