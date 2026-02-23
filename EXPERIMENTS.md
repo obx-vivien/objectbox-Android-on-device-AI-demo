@@ -109,10 +109,10 @@
 
 ## 2026-02-13 — USE model outputs 100 dimensions, not 512
 - **Discovery:** The Universal Sentence Encoder TFLite model downloaded for text embeddings outputs **100-dimensional** vectors, not 512 as stated in SPECS.
-- **Action:** Updated ObjectBox `@HnswIndex(dimensions=100)` on `textEmbedding` field in `Screenshot.kt`. Updated test assertion to `assertEquals(100, vector.size)` in `TextEmbeddingInstrumentedTest.kt`. These changes are in the working tree (uncommitted).
+- **Action:** Updated ObjectBox `@HnswIndex(dimensions=100)` on `textEmbedding` field in `Screenshot.kt`. Updated test assertion to `assertEquals(100, vector.size)` in `TextEmbeddingInstrumentedTest.kt`.
 - **Impact:** Semantic search still works (COSINE distance); 100-dim is smaller/faster but lower capacity than 512-dim. A different USE variant or model could provide 512-dim if needed.
 - **Note:** The SPECS reference to 512-dim likely assumed the full TF Hub USE model; the TFLite-compatible variant is 100-dim.
-- **Not yet verified on device** — the dimension was observed during the previous debugging session. Should be confirmed by running `TextEmbeddingInstrumentedTest` on a connected device.
+- **Verified on device** via `TextEmbeddingInstrumentedTest` (connected Android test).
 
 ## 2026-02-11 — ~~Attempt 2: split flavors to avoid MediaPipe JNI conflict (PASS)~~
 ~~- Purpose: Avoid JNI symbol collision between `tasks-text` and `tasks-vision` by isolating them per flavor.~~
@@ -555,4 +555,4 @@
   - `android-kotlin/app/src/main/java/com/screenshotsearcher/ui/settings/SettingsViewModel.kt`
   - `android-kotlin/app/src/main/java/com/screenshotsearcher/ScreenshotSearcherApp.kt`
   - `android-kotlin/app/src/androidTest/java/com/screenshotsearcher/GemmaCaptionerInstrumentedTest.kt`
-- **Tests:** `./gradlew :app:test` (device not connected for `connectedAndroidTest`).
+- **Tests:** `./gradlew :app:test`, `./gradlew :app:connectedAndroidTest` (captioning + Gemma tests run on device with model installed).

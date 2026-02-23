@@ -87,5 +87,5 @@ cd android-kotlin
 
 ### Text embedder model: 100-dim, not 512-dim
 - The USE TFLite model outputs **100-dimensional** vectors, not 512 as SPECS assumed.
-- `Screenshot.kt` entity and `TextEmbeddingInstrumentedTest.kt` are updated to 100-dim in the working tree (uncommitted).
-- Not yet verified on device — should be confirmed by running `TextEmbeddingInstrumentedTest` on a connected device.
+- `Screenshot.kt` entity and `TextEmbeddingInstrumentedTest.kt` are updated to 100-dim.
+- Verified on device by running `TextEmbeddingInstrumentedTest` via `connectedAndroidTest`.
