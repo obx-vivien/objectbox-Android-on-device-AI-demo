@@ -34,10 +34,11 @@
 | US-1 | As a developer, I can import local device images/screenshots into the app and see them indexed. | Images appear in the list with status "indexed" after pipeline completes. |
 | US-2 | As a developer, I can search for images / Screenshots by keyword over OCR-extracted text. | Typing "password" returns screenshots / images containing that word (linked to the original asset) |
 | US-3 | As a developer, I can search semantically by typing a keyword or a natural-language query. | Typing "login screen" returns relevant screenshots even if "login screen" doesn't appear verbatim in OCR text. |
-| US-4 | As a developer, I can search by image similarity (query-by-example). | Selecting a screenshot returns visually similar screenshots ranked by similarity score. |
+| US-4 | ~~As a developer, I can search by image similarity (query-by-example).~~ | ~~Selecting a screenshot returns visually similar screenshots ranked by similarity score.~~ |
 | US-5 | As a developer, I can filter results by auto-generated category/tag labels. | Tapping a tag like "text" or "screenshot" or "fruits" or "animals" narrows results. |
 | US-5b | As a developer, when I type a query, results are ranked by combined signals (OCR + semantic + tags), and items matching multiple signals appear higher. | Unified is the default search mode; multi-signal matches rank higher than single-signal matches; each result shows "Matched by" badges and scores. |
 | US-6 | As a developer, I can inspect a screenshot's full metadata: OCR text, tags, embeddings info, timestamps, URI. | Detail screen shows all enrichment data with collapsible sections. |
+| US-6b | As a developer, I can search and filter by image metadata (dates, name, size, album, mime/type, dimensions, orientation, duration, tags). | Search filters and/or advanced search fields narrow results based on stored metadata. |
 | US-7 | As a developer, I can toggle individual pipeline modules on/off from a settings screen. | Disabling "Text Embeddings" removes semantic search; re-enabling re-indexes. |
 | US-8 | As a developer, I can see indexing progress (queued/indexed/failed counts, last run, failures) and pause/resume/cancel indexing. | Status bar updates in real-time; pause stops the worker; resume continues from where it left off. |
 | US-9 | As a developer, the app works immediately after install with a bundled sample dataset. | First launch shows pre-indexed sample screenshots without requiring device permissions. |
@@ -82,10 +83,10 @@ The pipeline processes one image at a time, sequentially, in a single background
 
 ```
 Import (URI)
-  → Preprocess (decode, apply EXIF rotation, generate thumbnail, extract basic metadata)
+  → Preprocess (decode, apply EXIF rotation, generate thumbnail, extract metadata)
   → [if enabled] OCR (ML Kit Text Recognition → raw text)
   → [if enabled] Text Embedding (MediaPipe Text Embedder → float[] vector)
-  → [if enabled] Image Embedding (MediaPipe Image Embedder → float[] vector)
+  → ~~[if enabled] Image Embedding (MediaPipe Image Embedder → float[] vector)~~
   → [if enabled] Labeling (ML Kit Image Labeling → tags/categories)
   → [if enabled] LLM Summary (MediaPipe LLM Inference → keywords/summary)
   → Persist (write Screenshot entity + related data to ObjectBox)
@@ -195,14 +196,23 @@ The `core/` and `infra/` layers are testable without the UI. The `infra/` wrappe
 | `id` | `Long` | ObjectBox auto-ID |
 | `originalUri` | `String` | Content URI or file path to original image |
 | `thumbnailBytes` | `ByteArray` | Compressed JPEG thumbnail (~200×200, quality 70) |
+| `displayName` | `String?` | MediaStore display name or filename |
+| `mimeType` | `String?` | MediaStore MIME type |
+| `sizeBytes` | `Long?` | MediaStore size in bytes |
 | `width` | `Int` | Original image width |
 | `height` | `Int` | Original image height |
+| `orientation` | `Int?` | EXIF orientation (if available) |
 | `dateTaken` | `Long?` | EXIF or file-system timestamp (epoch ms) |
+| `dateModified` | `Long?` | MediaStore modified timestamp (epoch ms) |
 | `dateImported` | `Long` | When the app imported it (epoch ms) |
+| `album` | `String?` | MediaStore bucket display name / album |
+| `durationMs` | `Long?` | MediaStore duration (videos only) |
 | `sourceApp` | `String?` | Package name if detectable from URI |
 | `ocrText` | `String?` | Full OCR-extracted text (null if OCR disabled) |
+| `description` | `String?` | Short auto-description from on-device image captioning model (see Package 4.1) |
+| `dominantColors` | `IntArray?` | Top 3–5 RGB colors (packed 0xRRGGBB) |
 | `textEmbedding` | `FloatArray?` | 512-dim vector from text embedder (null if disabled or no OCR text) |
-| `imageEmbedding` | `FloatArray?` | 1024-dim vector from image embedder (null if disabled) |
+| `imageEmbedding` | `FloatArray?` | ~~1024-dim vector from image embedder (null if disabled)~~ |
 | `labels` | `MutableList<String>` | Auto-generated labels from ML Kit Image Labeling |
 | `labelConfidences` | `FloatArray?` | Parallel array of confidence scores for `labels` |
 | `llmSummary` | `String?` | LLM-generated summary/keywords (null if LLM disabled) |
@@ -245,7 +255,7 @@ This is the same `IndexingState` class emitted by `IndexingStatusFlow` in §4.4.
 
 - All entities use ObjectBox `@Id` (Long) which is compatible with ObjectBox Sync.
 - `originalUri` is device-local; a future sync layer would need to map URIs or sync thumbnail bytes.
-- `textEmbedding` and `imageEmbedding` are stored as `FloatArray` which ObjectBox Sync handles natively.
+- `textEmbedding` and ~~`imageEmbedding`~~ are stored as `FloatArray` which ObjectBox Sync handles natively.
 - No cross-device unique ID is needed now, but adding a `uuid: String` field later is straightforward.
 
 ---
@@ -261,23 +271,23 @@ This is the same `IndexingState` class emitted by `IndexingStatusFlow` in §4.4.
 
 The ObjectBox `@HnswIndex` on `textEmbedding` must specify `dimensions = 512`. Any vector written to this field must be exactly 512 floats. The MediaPipe Text Embedder is configured with `l2Normalize = true`, producing unit-length vectors.
 
-### 5.2 Image Embeddings
+### 5.2 ~~Image Embeddings~~
 
-- **Model**: MobileNet V3 Small via MediaPipe Image Embedder
-- **File**: `mobilenet_v3_small.tflite`
-- **Dimension**: **1024**
-- **Size**: ~10 MB
-- **License**: Apache 2.0
+- ~~Model: MobileNet V3 Small via MediaPipe Image Embedder~~
+- ~~File: `mobilenet_v3_small.tflite`~~
+- ~~Dimension: **1024**~~
+- ~~Size: ~10 MB~~
+- ~~License: Apache 2.0~~
 
-The ObjectBox `@HnswIndex` on `imageEmbedding` must specify `dimensions = 1024`. The MediaPipe Image Embedder is configured with `l2Normalize = true`.
+~~The ObjectBox `@HnswIndex` on `imageEmbedding` must specify `dimensions = 1024`. The MediaPipe Image Embedder is configured with `l2Normalize = true`.~~
 
-**Why MobileNet V3 Small over Large**: smaller download (~10 MB vs ~15 MB), faster inference (3.9 ms vs 9.8 ms on Pixel 6), and 1024 dimensions is sufficient for a demo. If quality is noticeably worse during experiments, we can evaluate switching to Large (1280 dims) — this would require a one-line dimension change in the entity annotation + re-index.
+~~Why MobileNet V3 Small over Large: smaller download (~10 MB vs ~15 MB), faster inference (3.9 ms vs 9.8 ms on Pixel 6), and 1024 dimensions is sufficient for a demo. If quality is noticeably worse during experiments, we can evaluate switching to Large (1280 dims) — this would require a one-line dimension change in the entity annotation + re-index.~~
 
 ### 5.3 Dimension Mismatch Prevention
 
-- The entity annotation hardcodes the dimension: `@HnswIndex(dimensions = 512)` / `@HnswIndex(dimensions = 1024)`.
+- The entity annotation hardcodes the dimension: `@HnswIndex(dimensions = 512)` / ~~`@HnswIndex(dimensions = 1024)`~~.
 - The MediaPipe embedder wrapper validates output dimension at initialization (assert `result.embeddingResult().embeddings()[0].floatEmbedding().length == EXPECTED_DIM`).
-- A constants file (`EmbeddingConstants.kt`) defines `TEXT_EMBEDDING_DIM = 512` and `IMAGE_EMBEDDING_DIM = 1024`, referenced by both the entity and the embedder wrapper.
+- A constants file (`EmbeddingConstants.kt`) defines `TEXT_EMBEDDING_DIM = 512` and ~~`IMAGE_EMBEDDING_DIM = 1024`~~, referenced by both the entity and the embedder wrapper.
 - If the model changes, the constant changes → entity annotation changes → ObjectBox regenerates schema → re-index is required. This is a deliberate, traceable change.
 
 ---
@@ -289,7 +299,7 @@ The ObjectBox `@HnswIndex` on `imageEmbedding` must specify `dimensions = 1024`.
 | Embedding | ObjectBox `distanceType` | Justification |
 |-----------|--------------------------|---------------|
 | Text (USE, 512-dim) | `VectorDistanceType.COSINE` | USE embeddings represent semantic direction; cosine similarity measures angular distance, which is the standard metric for sentence embeddings. With l2-normalized vectors, cosine distance and dot-product distance are equivalent, but `COSINE` is more semantically clear. |
-| Image (MobileNet V3, 1024-dim) | `VectorDistanceType.COSINE` | MobileNet feature vectors encode visual similarity as direction in embedding space. Cosine is the standard metric for image retrieval with CNN features. |
+| ~~Image (MobileNet V3, 1024-dim)~~ | ~~`VectorDistanceType.COSINE`~~ | ~~MobileNet feature vectors encode visual similarity as direction in embedding space. Cosine is the standard metric for image retrieval with CNN features.~~ |
 
 ### 6.2 L2 Normalization Enforcement
 
@@ -302,11 +312,11 @@ val textOptions = TextEmbedderOptions.builder()
     .setL2Normalize(true)   // ← enforced
     .build()
 
-// Image Embedder configuration
-val imageOptions = ImageEmbedderOptions.builder()
-    .setBaseOptions(baseOptions)
-    .setL2Normalize(true)   // ← enforced
-    .build()
+// ~~Image Embedder configuration~~
+// ~~val imageOptions = ImageEmbedderOptions.builder()~~
+// ~~    .setBaseOptions(baseOptions)~~
+// ~~    .setL2Normalize(true)   // ← enforced~~
+// ~~    .build()~~
 ```
 
 **Enforcement strategy**:
@@ -463,7 +473,7 @@ All versions verified against Maven Central / Google Maven as of 2026-02-10.
 | ObjectBox Gradle Plugin | | `io.objectbox:objectbox-gradle-plugin` | **5.1.0** | Must match runtime version |
 | OCR | ML Kit Text Recognition (bundled) | `com.google.mlkit:text-recognition` | **16.0.1** | Latin script; on-device |
 | Text Embeddings | MediaPipe Text Embedder | `com.google.mediapipe:tasks-text` | **0.10.32** | USE model, 512-dim |
-| Image Embeddings | MediaPipe Image Embedder | `com.google.mediapipe:tasks-vision` | **0.10.32** | MobileNet V3 Small, 1024-dim |
+| ~~Image Embeddings~~ | ~~MediaPipe Image Embedder~~ | ~~`com.google.mediapipe:tasks-vision`~~ | ~~**0.10.32**~~ | ~~MobileNet V3 Small, 1024-dim~~ |
 | Image Labeling | ML Kit Image Labeling (bundled) | `com.google.mlkit:image-labeling` | **17.0.9** | 400+ labels, on-device |
 | Optional LLM | MediaPipe LLM Inference | `com.google.mediapipe:tasks-genai` | **0.10.32** | Gemma 3 270M-IT |
 | UI | Jetpack Compose + Material 3 | `androidx.compose:compose-bom` | **2026.01.01** | |
@@ -476,9 +486,9 @@ All versions verified against Maven Central / Google Maven as of 2026-02-10.
 
 ### 9.2 MediaPipe Version Compatibility Note
 
-MediaPipe tasks are published under a shared version scheme. All three artifacts (`tasks-text`, `tasks-vision`, `tasks-genai`) are pinned to **0.10.32** — the highest version available on Google Maven for all three as of 2026-02-10. This avoids transitive dependency conflicts and the R8 minification bugs reported in 0.10.20–0.10.21.
+MediaPipe tasks are published under a shared version scheme. The artifacts in use (`tasks-text`, `tasks-genai`) are pinned to **0.10.32** — the highest version available on Google Maven for these as of 2026-02-10. This avoids transitive dependency conflicts and the R8 minification bugs reported in 0.10.20–0.10.21.
 
-**Reproducibility constraint**: Before locking TODO, verify the chosen MediaPipe Tasks version exists for `tasks-text`, `tasks-vision`, and `tasks-genai`, and that Gradle resolves exactly one MediaPipe version across all configurations.
+**Reproducibility constraint**: Before locking TODO, verify the chosen MediaPipe Tasks version exists for `tasks-text` and `tasks-genai`, and that Gradle resolves exactly one MediaPipe version across all configurations.
 
 **Verification step (Package 0)**: After scaffolding the Gradle project, run `./gradlew :app:dependencies | grep mediapipe` to confirm only one MediaPipe version resolves. If conflicts appear, add a resolution strategy in `build.gradle.kts`.
 
@@ -489,7 +499,7 @@ mediapipe = "0.10.32"
 
 [libraries]
 mediapipe-tasks-text = { module = "com.google.mediapipe:tasks-text", version.ref = "mediapipe" }
-mediapipe-tasks-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "mediapipe" }
+~~mediapipe-tasks-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "mediapipe" }~~
 mediapipe-tasks-genai = { module = "com.google.mediapipe:tasks-genai", version.ref = "mediapipe" }
 ```
 
@@ -508,7 +518,7 @@ The app is fully functional without the LLM module. When the LLM toggle is enabl
 | Building Block | Alternative | Why Deferred |
 |----------------|-------------|--------------|
 | Text Embeddings | ONNX Runtime + MiniLM | Lower-level API; MediaPipe is simpler for a demo. Can revisit if USE quality is insufficient. |
-| Image Embeddings | MobileNet V3 Large (1280-dim) | Slower, larger. Only upgrade if Small quality is poor. |
+| ~~Image Embeddings~~ | ~~MobileNet V3 Large (1280-dim)~~ | ~~Slower, larger. Only upgrade if Small quality is poor.~~ |
 | LLM | Gemma 2 2B | 8× larger; only consider if 270M output quality is useless. |
 | UI | XML Views | Compose is the modern default; no reason to use XML for a new project. |
 
@@ -555,7 +565,7 @@ All UI colors must be defined in a single theme file; do not hardcode colors in 
    - Module toggles (switches):
      - OCR Ingestion + Keyword Search
      - Text Embeddings + Semantic Search
-     - Image Embeddings + Image Similarity Search
+     - ~~Image Embeddings + Image Similarity Search~~
      - Labeling/Categorization + Filters
      - (Optional) On-Device LLM
    - Each toggle shows: status (enabled/disabled), model name, approximate size.
@@ -611,13 +621,13 @@ Visible on Home Screen (and optionally Search Screen). Shows:
 - Search Screen with semantic mode.
 - **Tests**: Embedding dimension validation, L2 norm check, semantic search ranking, empty-input handling.
 
-### Package 3 (v0.04) — Image Embeddings + Image Similarity
-- MediaPipe Image Embedder integration (MobileNet V3 Small, 1024-dim).
-- Image embedding pipeline stage: bitmap → float[1024].
-- ObjectBox HNSW vector index on `imageEmbedding`.
-- Image similarity search: select image → embed → nearest-neighbor search.
-- Search Screen with image similarity mode.
-- **Tests**: Embedding dimension validation, L2 norm check, image similarity ranking, duplicate detection.
+### Package 3 (v0.04) — ~~Image Embeddings + Image Similarity~~
+- ~~MediaPipe Image Embedder integration (MobileNet V3 Small, 1024-dim).~~
+- ~~Image embedding pipeline stage: bitmap → float[1024].~~
+- ~~ObjectBox HNSW vector index on `imageEmbedding`.~~
+- ~~Image similarity search: select image → embed → nearest-neighbor search.~~
+- ~~Search Screen with image similarity mode.~~
+- ~~Tests: Embedding dimension validation, L2 norm check, image similarity ranking, duplicate detection.~~
 
 ### Package 4 (v0.05) — Labeling + Filters
 - ML Kit Image Labeling integration (bundled).
@@ -625,6 +635,18 @@ Visible on Home Screen (and optionally Search Screen). Shows:
 - Filter chips on Search Screen.
 - Detail Screen tags section.
 - **Tests**: Labeling on fixture images, filter query correctness, empty-label handling.
+
+### Package 4.1 (v0.05.1) — Metadata Capture + Derived Fields (Added Later)
+- Extract and persist metadata on import/preprocess:
+  - `displayName`, `mimeType`, `sizeBytes`, `width`, `height`, `orientation`, `dateTaken`, `dateModified`, `album`, `durationMs`, `sourceApp`.
+  - **Source priority**: EXIF for `dateTaken` and `orientation` if available; otherwise MediaStore. Dimensions from EXIF if present, else MediaStore, else decode bounds.
+- Add **derived fields**:
+  - `description`: a short auto-description generated by an on-device **image captioning model** (no network).
+  - `dominantColors`: top 3–5 colors computed from the normalized bitmap.
+- Add metadata-based search filters:
+  - date range (taken/modified), name contains, size range, mime/type, dimensions, orientation, album, duration, tags, dominant color.
+- Detail screen: show metadata section and description.
+- **Tests**: Metadata extraction on fixture asset; dominant color extraction sanity; description non-empty when labels/OCR available.
 
 ### Package 5 (v0.06) — Settings + Module Toggles + Indexing Control
 - Settings Screen with all toggles.
@@ -680,9 +702,9 @@ Visible on Home Screen (and optionally Search Screen). Shows:
 - [ ] Embedding vector is 512-dim and L2-normalized (test assertion).
 
 ### Package 3 (v0.04)
-- [ ] `./gradlew connectedAndroidTest` passes — image embedding tests green.
-- [ ] Image similarity search returns visually similar images ranked by score.
-- [ ] Embedding vector is 1024-dim and L2-normalized (test assertion).
+- [ ] ~~`./gradlew connectedAndroidTest` passes — image embedding tests green.~~
+- [ ] ~~Image similarity search returns visually similar images ranked by score.~~
+- [ ] ~~Embedding vector is 1024-dim and L2-normalized (test assertion).~~
 
 ### Package 4 (v0.05)
 - [ ] `./gradlew connectedAndroidTest` passes — labeling tests green.
@@ -690,6 +712,12 @@ Visible on Home Screen (and optionally Search Screen). Shows:
 - [ ] Filter chips appear and narrow results correctly.
 - [ ] Detail screen shows labels with confidence percentages.
 - [ ] In Unified mode (text query), with OCR + semantic + labels enabled, items matching 2+ signals rank above items matching 1 signal (fusion ranking test).
+
+### Package 4.1 (v0.05.1)
+- [ ] Metadata fields populated for imported items (name, mime/type, size, dates, dimensions, orientation, album, duration where applicable).
+- [ ] Description and dominant colors populated when inputs are available.
+- [ ] Metadata filters narrow results correctly.
+- [ ] Detail screen shows metadata + description.
 
 ### Package 5 (v0.06)
 - [ ] All prior tests still pass (regression).
@@ -717,7 +745,7 @@ Visible on Home Screen (and optionally Search Screen). Shows:
 - ObjectBox has a Swift binding; the data model (entities, vector indexes, distance types) translates directly.
 - OCR: Apple Vision framework (on-device).
 - Text Embeddings: Core ML with a converted USE model, or a NaturalLanguage framework embedding.
-- Image Embeddings: Core ML with a converted MobileNet model.
+- ~~Image Embeddings: Core ML with a converted MobileNet model.~~
 - Labeling: Vision framework `VNClassifyImageRequest`.
 - LLM: Core ML with a converted Gemma model, or Apple's on-device foundation models if available.
 - UI: SwiftUI, mirroring the Compose screens.

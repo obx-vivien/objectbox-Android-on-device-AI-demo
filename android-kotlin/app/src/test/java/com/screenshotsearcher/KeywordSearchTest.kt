@@ -32,7 +32,7 @@ class KeywordSearchTest {
         box.put(Screenshot(originalUri = "content://1", thumbnailBytes = byteArrayOf(1), ocrText = "Password Reset"))
         box.put(Screenshot(originalUri = "content://2", thumbnailBytes = byteArrayOf(2), ocrText = "Other"))
 
-        val results = repository.searchByKeyword("password")
+        val results = repository.searchByKeywordOcr("password")
         assertEquals(1, results.size)
         assertEquals("content://1", results.first().originalUri)
     }

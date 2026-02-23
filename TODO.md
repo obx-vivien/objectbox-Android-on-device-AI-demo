@@ -144,36 +144,36 @@
 
 ------
 
-## Package 3 — v0.04 Image Embeddings + Image Similarity
+## Package 3 — v0.04 ~~Image Embeddings + Image Similarity~~
 
 ### Goals
 
-- MediaPipe Image Embedder (1024-dim MobileNet V3 Small).
-- ObjectBox HNSW index on `imageEmbedding`.
-- Similar Image search mode.
+~~- MediaPipe Image Embedder (1024-dim MobileNet V3 Small).~~
+~~- ObjectBox HNSW index on `imageEmbedding`.~~
+~~- Similar Image search mode.~~
 
 ### Steps
 
-1. Add MediaPipe `tasks-vision` pinned to **0.10.32**.
-2. Implement `ImageEmbedderWrapper` enforcing:
-   - `l2Normalize = true`
-   - output dim == 1024
-3. Pipeline stage: bitmap → embedding.
-4. Add `@HnswIndex(dimensions=1024, distanceType=COSINE)` on `imageEmbedding`.
-5. Similar image mode: choose a screenshot → vector search → `imageScore = clamp(1 - cosineDistance, 0..1)`; threshold `>= 0.30`.
-6. **Storage guardrail restated:** store FloatArray only; never store full-res image bytes.
+~~1. Add MediaPipe `tasks-vision` pinned to **0.10.32**.~~
+~~2. Implement `ImageEmbedderWrapper` enforcing:~~
+~~   - `l2Normalize = true`~~
+~~   - output dim == 1024~~
+~~3. Pipeline stage: bitmap → embedding.~~
+~~4. Add `@HnswIndex(dimensions=1024, distanceType=COSINE)` on `imageEmbedding`.~~
+~~5. Similar image mode: choose a screenshot → vector search → `imageScore = clamp(1 - cosineDistance, 0..1)`; threshold `>= 0.30`.~~
+~~6. Storage guardrail restated: store FloatArray only; never store full-res image bytes.~~
 
 ### Tests
 
-- Instrumented: dim == 1024
-- Instrumented: L2 norm ~ 1.0 ± 0.001
-- Instrumented: similarity ranking with fixtures
+~~- Instrumented: dim == 1024~~
+~~- Instrumented: L2 norm ~ 1.0 ± 0.001~~
+~~- Instrumented: similarity ranking with fixtures~~
 
 ### Commands / Gates
 
-- `./gradlew :android-kotlin:app:connectedAndroidTest`
-- **Release minify smoke test (repeat gate):**
-   `./gradlew :android-kotlin:app:assembleRelease`
+~~- `./gradlew :android-kotlin:app:connectedAndroidTest`~~
+~~- Release minify smoke test (repeat gate):~~
+~~   `./gradlew :android-kotlin:app:assembleRelease`~~
 
 ------
 
@@ -205,6 +205,53 @@
 
 ### Commands
 
+- `./gradlew :android-kotlin:app:connectedAndroidTest`
+
+------
+
+## Package 4.1 — v0.05.1 Metadata + Derived Fields (Added Later)
+
+### Goals
+
+- Capture and persist image metadata (EXIF/MediaStore).
+- Add derived description and dominant colors (on-device).
+- Add metadata-based search filters.
+- Use metadata for search, e.g. keyword as well as semantic.
+- Detail screen shows metadata and description.
+
+### Steps
+
+1. **Metadata extraction (preprocess/import)**
+   - Read metadata with priority:
+     - EXIF for `dateTaken`, `orientation`, `width`, `height` if present.
+     - MediaStore for `displayName`, `mimeType`, `sizeBytes`, `dateModified`, `dateTaken`, `album`, `durationMs`, `width`, `height`.
+     - Decode bounds as fallback for dimensions.
+   - Persist fields on `Screenshot`:
+     - `displayName`, `mimeType`, `sizeBytes`, `width`, `height`, `orientation`, `dateTaken`, `dateModified`, `album`, `durationMs`.
+2. **Derived fields**
+   - `description`: on-device **image captioning model** (no network). Keep short (1–2 sentences).
+   - `dominantColors`: compute top 3–5 colors from normalized bitmap; store as packed `IntArray` (0xRRGGBB).
+3. **Search / filters**
+   - Add metadata filters:
+     - date range (taken/modified), name contains, size range, mime/type, dimensions, orientation, album, duration.
+   - Integrate filters into Search UI (alongside label chips).
+4. **Detail UI**
+   - Add a “Metadata” section with all captured fields.
+   - Show `description` below OCR/tags (if present).
+   - Show color swatches for `dominantColors`.
+5. **Storage guardrail restated**
+   - Continue storing only thumbnail bytes + URI; no full-res bytes.
+
+### Tests
+
+- Instrumented: metadata extraction for a fixture asset (date/name/dimensions non-null where expected).
+- Instrumented: dominant colors returns 3–5 values for a fixture.
+- JVM: description generation non-empty when OCR or labels present.
+- JVM: metadata filter query correctness (date range, name contains).
+
+### Commands
+
+- `./gradlew :android-kotlin:app:test`
 - `./gradlew :android-kotlin:app:connectedAndroidTest`
 
 ------

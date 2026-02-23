@@ -32,6 +32,7 @@ Project-local constraints and working procedure for the “Screenshot / Image Se
   - v0.01, v0.02, … entries aligned to TODO packages (“what works” snapshots).
 - This `AGENTS.md`:
   - Update only when the agent makes mistakes/struggles; add prevention rules.
+  - If the user requests committing, prefer committing regularly (smaller batches) unless asked to bundle everything.
 
 ## 4) Baseline tech stack (approved default)
 ### Database / vector search
@@ -89,4 +90,3 @@ Must ask before:
 - changing repo layout or combining Android/iOS into a single codebase
 - moving away from ObjectBox for storage or vector search
 - adding cloud inference or network dependencies
-

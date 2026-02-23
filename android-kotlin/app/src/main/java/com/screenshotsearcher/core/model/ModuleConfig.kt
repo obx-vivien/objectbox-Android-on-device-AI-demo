@@ -8,7 +8,6 @@ class ModuleConfig(
     @Id var id: Long = 0,
     var ocrEnabled: Boolean = true,
     var textEmbeddingsEnabled: Boolean = true,
-    var imageEmbeddingsEnabled: Boolean = true,
     var labelingEnabled: Boolean = true,
     var llmEnabled: Boolean = false
 )

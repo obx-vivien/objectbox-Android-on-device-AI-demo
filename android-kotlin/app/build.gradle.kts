@@ -36,15 +36,6 @@ android {
         compose = true
     }
 
-    flavorDimensions += "embedder"
-    productFlavors {
-        create("textOnly") {
-            dimension = "embedder"
-        }
-        create("visionOnly") {
-            dimension = "embedder"
-        }
-    }
 
     sourceSets {
         getByName("main") {
@@ -60,6 +51,15 @@ android {
             useLegacyPackaging = true
         }
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 dependencies {
@@ -78,9 +78,11 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.exifinterface)
     implementation(libs.mlkit.text)
+    implementation(libs.mlkit.image.labeling)
     implementation(libs.play.services.tasks)
-    add("textOnlyImplementation", libs.mediapipe.tasks.text)
-    add("visionOnlyImplementation", libs.mediapipe.tasks.vision)
+    implementation(libs.mediapipe.tasks.text)
+    implementation(libs.mediapipe.tasks.genai)
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.objectbox.kotlin)
     kapt(libs.objectbox.processor)
