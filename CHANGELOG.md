@@ -79,7 +79,7 @@
 - Indexing checkpoints per stage with `lastCompletedStage` to resume after interruption.
 - Add re-index all / clear database actions (confirm dialogs).
 - Indexing status line shows paused state when queue exists.
-- Captioning instrumented test marked skipped until LLM model is present (Package 6).
+- Captioning instrumented test enabled when Gemma model is installed.
 
 ## v0.07
 - Enable Gemma captioning toggle in Settings with inline explanations.

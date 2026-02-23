@@ -543,7 +543,7 @@
   - `android-kotlin/app/src/main/java/com/screenshotsearcher/ui/settings/SettingsViewModel.kt`
   - `android-kotlin/app/src/main/java/com/screenshotsearcher/ui/home/HomeViewModel.kt`
   - `android-kotlin/app/src/main/java/com/screenshotsearcher/ui/home/HomeScreen.kt`
-- **Tests:** `./gradlew :app:test`, `./gradlew :app:connectedAndroidTest` (captioning test skipped).
+- **Tests:** `./gradlew :app:test`, `./gradlew :app:connectedAndroidTest` (captioning test run on device with model installed).
 
 ## 2026-02-21 — Package 6 Gemma captioning controls
 - **Observation:** Package 6 requires explicit Gemma model management and user-triggered actions.
